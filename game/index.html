@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Galeri Permata: Berlian Aurora — Heist Game</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #0a0e1a;
+    font-family: Georgia, 'Times New Roman', serif; }
+  #stage { position: fixed; inset: 0; }
+  #stage canvas { display: block; width: 100%; height: 100%; }
+  .panel { position: fixed; z-index: 10; background: rgba(10, 14, 30, 0.82);
+    border: 1px solid #d4af37; border-radius: 10px; color: #eef2f7;
+    padding: 10px 14px; font-size: 17px; line-height: 1.45; backdrop-filter: blur(2px); }
+  #hud-top { top: 12px; left: 12px; min-width: 196px; font-size: 16px; }
+  #hud-top .row { display: flex; justify-content: space-between; gap: 14px; }
+  #hud-top .gold { color: #ffd97a; }
+  #alarm-panel { top: 12px; left: 244px; width: 196px; font-size: 16px; }
+  #alarm-status { font-weight: bold; letter-spacing: 1px; }
+  #alarm-bar { height: 12px; background: #2a3350; border-radius: 6px; margin-top: 6px; overflow: hidden; }
+  #alarm-fill { height: 100%; width: 0%; background: #39ff88; transition: width 0.15s linear; }
+  #hud-laser { margin-top: 6px; font-size: 15px; }
+  #guard-bar { top: 128px; left: 12px; right: 12px; font-size: 16px; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis; }
+  #guard-bar .g-alert { color: #ff5c5c; font-weight: bold; }
+  #guard-bar .g-susp { color: #ffb020; font-weight: bold; }
+  #banner { position: fixed; top: 178px; left: 50%; transform: translateX(-50%); background: rgba(20, 16, 4, 0.88);
+    border: 1px solid #ffd97a; color: #ffd97a; border-radius: 8px; padding: 8px 20px;
+    font-size: 19px; font-weight: bold; z-index: 11; display: none; max-width: 90%;
+    text-align: center; }
+  #hint { bottom: 14px; left: 12px; font-size: 15px; color: #cdd8ea; }
+  #minimap-wrap { position: fixed; right: 12px; bottom: 12px; z-index: 10;
+    background: rgba(10, 14, 30, 0.82); border: 1px solid #d4af37; border-radius: 10px; padding: 6px; }
+  #minimap-wrap .cap { color: #ffd97a; font-size: 13px; text-align: center; letter-spacing: 2px; }
+  #minimap { display: block; }
+  .overlay { position: fixed; inset: 0; z-index: 20; display: flex; align-items: center;
+    justify-content: center; background: rgba(6, 8, 18, 0.72); }
+  .card { background: #101736; border: 2px solid #d4af37; border-radius: 16px; padding: 28px 40px;
+    max-width: 640px; color: #eef2f7; text-align: center; box-shadow: 0 0 60px rgba(125, 249, 255, 0.25); }
+  .card h1 { margin: 0 0 4px; font-size: 40px; color: #ffd97a; letter-spacing: 3px; }
+  .card h2 { margin: 0 0 14px; font-size: 20px; color: #7df9ff; font-weight: normal; letter-spacing: 2px; }
+  .card p { font-size: 17px; line-height: 1.55; margin: 8px 0; }
+  .card .keys { font-size: 15px; color: #cdd8ea; }
+  .card button { margin-top: 16px; font-family: inherit; font-size: 20px; font-weight: bold;
+    letter-spacing: 2px; color: #101736; background: #ffd97a; border: none; border-radius: 10px;
+    padding: 12px 34px; cursor: pointer; }
+  .card button:hover { background: #ffe9a8; }
+  .card .grade { font-size: 64px; color: #7df9ff; margin: 6px 0; }
+  .card .stats { font-size: 18px; color: #ffd97a; }
+  #shot-result { display: none; }
+</style>
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.min.js" } }
+</script>
+</head>
+<body>
+<div id="stage"></div>
+
+<div id="hud-top" class="panel">
+  <div class="row"><span id="hud-loot" class="gold">◆ 0/3 Permata</span><span id="hud-time">00:00</span></div>
+  <div class="row"><span id="hud-decoys">◉ Pengalih: 3</span><span class="gold">Galeri Permata</span></div>
+</div>
+<div id="alarm-panel" class="panel">
+  <span id="alarm-status">AMAN</span>
+  <div id="alarm-bar"><div id="alarm-fill"></div></div>
+  <div id="hud-laser">▦ Laser: MATI</div>
+</div>
+<div id="guard-bar" class="panel"></div>
+<div id="banner"></div>
+<div id="hint" class="panel"></div>
+<div id="minimap-wrap"><div class="cap">DENAH GALERI</div><canvas id="minimap" width="220" height="160"></canvas></div>
+
+<div id="title-screen" class="overlay">
+  <div class="card">
+    <h1>GALERI PERMATA</h1>
+    <h2>✦ BERLIAN AURORA ✦</h2>
+    <p>Malam ini galeri paling dijaga di kota menggelar tiga permata legendaris:
+    <b>Berlian Aurora</b>, <b>Ruby Maharani</b>, dan <b>Safir Samudra</b>.
+    Kurator berpatroli, CCTV menyapu, drone melayang, dan laser silang menjaga
+    etalase. Panel <b>kaca bias</b> membelokkan kerucut visi — baca arahnya sebelum bergerak.</p>
+    <p><b>TUJUAN:</b> curi 3 permata, lalu kabur lewat pintu EXIT di timur laut.
+    Ketahuan 3 kali = pencurian gagal.</p>
+    <p class="keys">WASD / panah — gerak &nbsp;·&nbsp; Shift — menyelinap &nbsp;·&nbsp; E — ambil permata<br>
+    Q — lempar pengalih (3x) &nbsp;·&nbsp; M — bisu &nbsp;·&nbsp; R — ulang &nbsp;·&nbsp; Enter — mulai</p>
+    <button id="start-btn">MULAI PENCURIAN</button>
+  </div>
+</div>
+
+<div id="win-screen" class="overlay" style="display:none">
+  <div class="card">
+    <h1>PENCURIAN BERHASIL!</h1>
+    <h2>TIGA PERMATA MILIKMU — KABUR TANPA JEJAK</h2>
+    <div class="grade" id="win-grade">S</div>
+    <p class="stats" id="win-stats"></p>
+    <button id="again-btn">MAIN LAGI</button>
+  </div>
+</div>
+
+<div id="lose-screen" class="overlay" style="display:none">
+  <div class="card">
+    <h1 style="color:#ff5c5c">TERTANGKAP!</h1>
+    <h2>Galeri dikunci. Pencurian gagal malam ini.</h2>
+    <p class="stats" id="lose-stats"></p>
+    <button id="retry-btn">COBA LAGI</button>
+  </div>
+</div>
+
+<div id="shot-result"></div>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
